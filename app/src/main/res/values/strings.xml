@@ -1,0 +1,4 @@
+<resources>
+    <string name="app_name">PhoneNumberList</string>
+    <string name="preference_file_key">tempDataSave</string>
+</resources>
