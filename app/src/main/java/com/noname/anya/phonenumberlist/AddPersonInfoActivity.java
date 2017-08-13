@@ -57,8 +57,6 @@ public class AddPersonInfoActivity extends AppCompatActivity {
         super.onPause();
         Log.e("AddPersonInfoActivity","onPause");
 
-
-
         EditText nickname_detail=(EditText)findViewById(R.id.textview_nickname_detail);
         EditText message_detail=(EditText)findViewById(R.id.textview_message_detail);
         EditText phonenumber_detail=(EditText)findViewById(R.id.textview_phonenumber_detail);

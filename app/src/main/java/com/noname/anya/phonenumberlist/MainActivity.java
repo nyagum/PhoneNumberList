@@ -1,11 +1,15 @@
 package com.noname.anya.phonenumberlist;
 
+import android.content.ContentProviderOperation;
+import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.database.Cursor;
 import android.net.Uri;
 import android.provider.ContactsContract;
+import android.provider.ContactsContract.Data;
+import android.provider.ContactsContract.CommonDataKinds.Phone;
 import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
@@ -14,7 +18,13 @@ import android.view.View;
 import android.widget.AdapterView;
 import android.widget.Button;
 import android.widget.ListView;
+import android.widget.Toast;
+
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
+
+import static android.provider.ContactsContract.Directory.ACCOUNT_TYPE;
 
 public class MainActivity extends AppCompatActivity {
 
@@ -27,10 +37,10 @@ public class MainActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        ArrayList<PersonInfo> mContents;
-
         mListView = (ListView) findViewById(R.id.lv_list);
         mContents=getContactList();
+
+
 //        preferences=getSharedPreferences("listview", MODE_PRIVATE);
 //        SharedPreferences.Editor editor=preferences.edit();
 //        int size=preferences.getInt("size",0);
@@ -59,7 +69,6 @@ public class MainActivity extends AppCompatActivity {
 //        }
 
         mAdapter=new BaseAdapterEx(this, mContents);
-
         mListView.setAdapter(mAdapter);
         mListView.setOnItemClickListener(mItemClickListener);
         mListView.setOnItemLongClickListener(mOnItemLongClickListener);
@@ -72,7 +81,7 @@ public class MainActivity extends AppCompatActivity {
 
         @Override
         public boolean onItemLongClick(AdapterView<?> parentView, View view, final int position, long id) {
-            Log.d("mOnItemLongClickListener","mOnItemLongClickListener position="+ position + " , id=" + id);
+//            Log.d("mOnItemLongClickListener","mOnItemLongClickListener position="+ position + " , id=" + id);
             AlertDialog.Builder alertDialogBuilder = new AlertDialog.Builder(view.getContext());
 
             alertDialogBuilder
@@ -87,7 +96,10 @@ public class MainActivity extends AppCompatActivity {
                                     //int result = getContentResolver().delete(RowContacts)
                                     //삭제한다
 //                                    preferences.edit().remove(new Integer(position).toString());
+                                    long removeID=mAdapter.getItem(position).contactId;
+                                    removeContactsToAddressBook(getApplicationContext() ,removeID);
                                     mAdapter.delete(position);
+
 //                                    preferences.edit().commit();
 //                                    Log.e("preferences", "완료");
                                 }
@@ -126,16 +138,26 @@ public class MainActivity extends AppCompatActivity {
                 String return_textview_nickname_detail=data.getStringExtra("textview_nickname_detail");
                 String return_textview_phonenumber_detail=data.getStringExtra("textview_phonenumber_detail");
 
-                //Log.e("onActivityResult","정상종료 확인 ("+return_textview_message_detail+") , ("+return_textview_nickname_detail+")");
+                Log.e("onActivityResult","정상종료 확인 ("+return_textview_message_detail+") , ("+return_textview_nickname_detail+"),("+return_textview_phonenumber_detail+")");
                 PersonInfo info=new PersonInfo();
                 info.mNickName=return_textview_nickname_detail;
                 info.mMessage=return_textview_message_detail;
                 info.mPhoneNumber=return_textview_phonenumber_detail;
 
-                mAdapter.add(0,info);
-     //           SharedPreferences.Editor editor=preferences.edit();
-//                editor.putString("0", info.toString());
-//                editor.apply();
+                Log.d("info.toString()",info.toString());
+                addContactsToAddressBook(info);
+                //아무데나 추가했다가
+                mAdapter.add(mAdapter.getCount(),info);
+
+                Comparator<PersonInfo> asc=new Comparator<PersonInfo>() {
+                    @Override
+                    public int compare(PersonInfo personInfo, PersonInfo compare) {
+                        return personInfo.mNickName.compareToIgnoreCase(compare.mNickName);
+                    }
+                };
+                //정렬한다
+                Collections.sort(mContents, asc);
+                mAdapter.notifyDataSetChanged();
 
             }else if(requestCode==2){
 
@@ -145,17 +167,15 @@ public class MainActivity extends AppCompatActivity {
 
                 int return_textview_position=data.getIntExtra("position", 0);
 
-//                Log.e("DetailPersonInfoActivity","return_textview_nickname "+return_textview_nickname+
-//                        " return_textview_message "+return_textview_message+
-//                        " return_textview_position "+return_textview_position+
-//                        "return_textview_phonenumber"+return_textview_phonenumber);
-
                 PersonInfo info=new PersonInfo();
                 info.mNickName=return_textview_nickname;
                 info.mMessage=return_textview_message;
                 info.mPhoneNumber=return_textview_phonenumber;
 
+                long modifyID=mAdapter.getItem(return_textview_position).contactId;
+
                 mAdapter.modify(return_textview_position,info);
+                modifyContactsToAddressBook(getApplicationContext(), modifyID, info);
             }
         }
     }
@@ -211,9 +231,7 @@ public class MainActivity extends AppCompatActivity {
 
         String sortOrder = ContactsContract.CommonDataKinds.Phone.DISPLAY_NAME + " COLLATE LOCALIZED ASC";
 
-        //Cursor contactCursor = managedQuery(uri, projection, null, selectionArgs, sortOrder);
         Cursor contactCursor = getContentResolver().query(uri, projection, null, selectionArgs, sortOrder);
-
 
         ArrayList<PersonInfo> contactlist = new ArrayList<PersonInfo>();
 
@@ -224,15 +242,98 @@ public class MainActivity extends AppCompatActivity {
 
                 PersonInfo tempInfo = new PersonInfo();
                 tempInfo.setContactId(contactCursor.getLong(0));
-                Log.e("getContactList","contactCursor : "+contactCursor.getLong(0));
+                Log.e("getContactList","contactCursor : "+contactCursor.getLong(0)+" , "+contactCursor.getString(2));
                 tempInfo.setPhonenum(phonenumber);
                 tempInfo.setName(contactCursor.getString(2));
                 tempInfo.mMessage=" ";
                 contactlist.add(tempInfo);
             }
         }
+        contactCursor.close();
         return contactlist;
     }
 
-    // TODO: shardPrefrenece 에 저장해둬서 삭제 취소할때 쓸것!!
+    // TODO: shardPrefrenece 에 저장해둬서 삭제 취소기능 구현할때 쓸것!!
+
+    public void removeContactsToAddressBook(Context context, long deleteId){
+        context.getContentResolver().delete(ContactsContract.RawContacts.CONTENT_URI, ContactsContract.RawContacts.CONTACT_ID+"="+deleteId,null);
+
+    }
+    public void modifyContactsToAddressBook(Context context, long modifyID, PersonInfo info){
+        ArrayList<ContentProviderOperation> ops = new ArrayList<ContentProviderOperation>();
+
+        ContentProviderOperation.Builder builder = ContentProviderOperation.newUpdate(ContactsContract.RawContacts.CONTENT_URI);
+        builder.withValue(ContactsContract.RawContacts.ACCOUNT_TYPE, null);
+        builder.withValue(ContactsContract.RawContacts.ACCOUNT_NAME, null);
+        ops.add(builder.build());
+
+        // Name
+        builder = ContentProviderOperation.newUpdate(ContactsContract.Data.CONTENT_URI);
+        builder.withSelection(Data._ID,  new String[]{String.valueOf(modifyID)});
+        builder.withValue(Data.MIMETYPE, ContactsContract.CommonDataKinds.StructuredName.CONTENT_ITEM_TYPE);
+        builder.withValue(ContactsContract.CommonDataKinds.StructuredName.DISPLAY_NAME, info.getName());
+        ops.add(builder.build());
+
+        // Number
+        builder = ContentProviderOperation.newUpdate(ContactsContract.Data.CONTENT_URI);
+        builder.withSelection(Data._ID,  new String[]{String.valueOf(modifyID)});
+        builder.withValue(Data.MIMETYPE, ContactsContract.CommonDataKinds.Phone.CONTENT_ITEM_TYPE);
+        builder.withValue(ContactsContract.CommonDataKinds.Phone.NUMBER, info.getPhonenum());
+        builder.withValue(ContactsContract.CommonDataKinds.Phone.TYPE, ContactsContract.CommonDataKinds.Phone.TYPE_WORK);
+        ops.add(builder.build());
+
+        // Update
+        try
+        {
+            context.getContentResolver().applyBatch(ContactsContract.AUTHORITY, ops);
+        }
+        catch (Exception e)
+        {
+            e.printStackTrace();
+        }
+
+    }
+
+    /**
+     * This function is used to add a new contact to address book
+     *
+     * @param contact
+     */
+    public void addContactsToAddressBook(PersonInfo contact){
+        ArrayList<ContentProviderOperation> ops = new ArrayList<ContentProviderOperation>();
+        ops.add(ContentProviderOperation.newInsert(ContactsContract.RawContacts.CONTENT_URI)
+                .withValue(ContactsContract.RawContacts.ACCOUNT_TYPE, ACCOUNT_TYPE)
+                .withValue(ContactsContract.RawContacts.ACCOUNT_NAME, "춘향이")
+                .build()
+        );
+
+        if(contact != null){
+            ops.add(ContentProviderOperation.newInsert(ContactsContract.Data.CONTENT_URI)
+                    .withValueBackReference(ContactsContract.Data.RAW_CONTACT_ID, 0)
+                    .withValue(ContactsContract.Data.MIMETYPE, ContactsContract.CommonDataKinds.StructuredName.CONTENT_ITEM_TYPE)
+                    .withValue(ContactsContract.CommonDataKinds.StructuredName.DISPLAY_NAME, contact.getName())
+                    .build()
+            );
+
+            ops.add(ContentProviderOperation.newInsert(ContactsContract.Data.CONTENT_URI)
+                    .withValueBackReference(ContactsContract.Data.RAW_CONTACT_ID, 0)
+                    .withValue(ContactsContract.Data.MIMETYPE, ContactsContract.CommonDataKinds.Phone.CONTENT_ITEM_TYPE)
+                    .withValue(Phone.NUMBER, contact.mPhoneNumber)
+                    .withValue(Phone.TYPE, ContactsContract.CommonDataKinds.Phone.TYPE_MOBILE)
+                    .build()
+            );
+
+            // Asking the Contact provider to create a new contact
+            try {
+                getContentResolver().applyBatch(ContactsContract.AUTHORITY, ops);
+            }
+            catch (Exception e) {
+                e.printStackTrace();
+            }
+        }
+
+        Toast.makeText(getApplicationContext(), "추가 되었습니다.", Toast.LENGTH_LONG).show();
+    }
+
+
 }

@@ -65,7 +65,6 @@ public class BaseAdapterEx extends BaseAdapter {
         textview_nickname.setText(mData.get(position).mNickName);
         textview_message.setText(mData.get(position).mMessage);
         textview_phonenumber.setText(mData.get(position).getPhonenum());
-        Log.e("getView","position : "+position+" format :"+mData.get(position).getPhonenum());
 
         PersonInfo info = mData.get(position);
         //Todo: mipmap 에서 비트맵으로 가져오기가 안된다 이미지는 정말 못하고 안드로이드가 끝나는건가
@@ -116,4 +115,5 @@ public class BaseAdapterEx extends BaseAdapter {
         mData.add(index, modify_data);
         notifyDataSetChanged();
     }
+    
 }

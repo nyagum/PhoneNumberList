@@ -24,7 +24,6 @@ public class PersonInfo {
     //TODO: 핸드폰 번호처럼 출력되게 만들것!
     public String getPhonenum() {
         String formatNumber="";
-        Log.e("PersonInfo","mPhoneNumber before format"+mPhoneNumber);
         if (mPhoneNumber.length() == 10) {
             formatNumber = mPhoneNumber.substring(0, 3) + "-"
                             + mPhoneNumber.substring(3, 6) + "-"
@@ -34,7 +33,6 @@ public class PersonInfo {
                             + mPhoneNumber.substring(3, 7) + "-"
                             + mPhoneNumber.substring(7);
                 }
-        Log.e("PersonInfo","mPhoneNumber after format"+formatNumber);
         return mPhoneNumber;
     }
     public void setPhonenum(String phonenum) {
