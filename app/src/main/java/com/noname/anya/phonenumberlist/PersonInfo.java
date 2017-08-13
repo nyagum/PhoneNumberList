@@ -15,7 +15,7 @@ public class PersonInfo {
     public String toString(){
         return mNickName+","+mMessage+","+mPhoneNumber;
     }
-    public long getPhotoid() {
+    public long getContactId() {
         return contactId;
     }
     public void setContactId(long photoid) {

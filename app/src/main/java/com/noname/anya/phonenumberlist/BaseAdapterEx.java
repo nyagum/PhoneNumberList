@@ -68,9 +68,6 @@ public class BaseAdapterEx extends BaseAdapter {
 
         PersonInfo info = mData.get(position);
         //Todo: mipmap 에서 비트맵으로 가져오기가 안된다 이미지는 정말 못하고 안드로이드가 끝나는건가
-        //Bitmap bm = openPhoto(info.getPhotoid());
-        // 사진없으면 기본 사진 보여주기
-        //textview_Image.setImageBitmap(bm);
 
         textview_phoneview.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -115,5 +112,5 @@ public class BaseAdapterEx extends BaseAdapter {
         mData.add(index, modify_data);
         notifyDataSetChanged();
     }
-    
+
 }

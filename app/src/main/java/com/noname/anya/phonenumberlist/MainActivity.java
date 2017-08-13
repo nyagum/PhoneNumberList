@@ -1,6 +1,7 @@
 package com.noname.anya.phonenumberlist;
 
 import android.content.ContentProviderOperation;
+import android.content.ContentValues;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
@@ -172,7 +173,7 @@ public class MainActivity extends AppCompatActivity {
                 info.mMessage=return_textview_message;
                 info.mPhoneNumber=return_textview_phonenumber;
 
-                long modifyID=mAdapter.getItem(return_textview_position).contactId;
+                long modifyID=mAdapter.getItem(return_textview_position).getContactId();
 
                 mAdapter.modify(return_textview_position,info);
                 modifyContactsToAddressBook(getApplicationContext(), modifyID, info);
@@ -259,29 +260,72 @@ public class MainActivity extends AppCompatActivity {
         context.getContentResolver().delete(ContactsContract.RawContacts.CONTENT_URI, ContactsContract.RawContacts.CONTACT_ID+"="+deleteId,null);
 
     }
-    public void modifyContactsToAddressBook(Context context, long modifyID, PersonInfo info){
+    public void modifyContactsToAddressBook(Context context, long modifyID, PersonInfo contact){
         ArrayList<ContentProviderOperation> ops = new ArrayList<ContentProviderOperation>();
+        Log.d("modifyContactsToAddressBook", "modify id :"+Long.toString(modifyID));
+        String[] nameParams = new String[] {
+                Long.toString(modifyID),
+                ContactsContract.CommonDataKinds.StructuredName.CONTENT_ITEM_TYPE
+        };
+        String where = ContactsContract.Data.CONTACT_ID + " = ? AND " + ContactsContract.Contacts.Data.MIMETYPE + " = ?";
+        Cursor nameCursor = context.getContentResolver().query (
+                ContactsContract.Data.CONTENT_URI,
+                null,
+                where,
+                nameParams, null
+        );
 
-        ContentProviderOperation.Builder builder = ContentProviderOperation.newUpdate(ContactsContract.RawContacts.CONTENT_URI);
-        builder.withValue(ContactsContract.RawContacts.ACCOUNT_TYPE, null);
-        builder.withValue(ContactsContract.RawContacts.ACCOUNT_NAME, null);
-        ops.add(builder.build());
+        // edit if exist.
+        if ( nameCursor.getCount() > 0 )
+        {
+            ops.add(android.content.ContentProviderOperation.newUpdate(android.provider.ContactsContract.Data.CONTENT_URI)
+                    .withSelection(where, nameParams)
+                    .withValue(ContactsContract.CommonDataKinds.StructuredName.DISPLAY_NAME, contact.mNickName)
+                    .build());
+        }
+        else
+        {
+            ContentValues cValues = new ContentValues();
+            cValues.put(ContactsContract.Data.RAW_CONTACT_ID, modifyID);
+            cValues.put(ContactsContract.Data.MIMETYPE, ContactsContract.CommonDataKinds.StructuredName.CONTENT_ITEM_TYPE);
+            cValues.put(ContactsContract.CommonDataKinds.StructuredName.DISPLAY_NAME, contact.mNickName);
 
-        // Name
-        builder = ContentProviderOperation.newUpdate(ContactsContract.Data.CONTENT_URI);
-        builder.withSelection(Data._ID,  new String[]{String.valueOf(modifyID)});
-        builder.withValue(Data.MIMETYPE, ContactsContract.CommonDataKinds.StructuredName.CONTENT_ITEM_TYPE);
-        builder.withValue(ContactsContract.CommonDataKinds.StructuredName.DISPLAY_NAME, info.getName());
-        ops.add(builder.build());
+            ops.add(android.content.ContentProviderOperation.newInsert(android.provider.ContactsContract.Data.CONTENT_URI)
+                    .withValues(cValues)
+                    .build());
+        }
 
-        // Number
-        builder = ContentProviderOperation.newUpdate(ContactsContract.Data.CONTENT_URI);
-        builder.withSelection(Data._ID,  new String[]{String.valueOf(modifyID)});
-        builder.withValue(Data.MIMETYPE, ContactsContract.CommonDataKinds.Phone.CONTENT_ITEM_TYPE);
-        builder.withValue(ContactsContract.CommonDataKinds.Phone.NUMBER, info.getPhonenum());
-        builder.withValue(ContactsContract.CommonDataKinds.Phone.TYPE, ContactsContract.CommonDataKinds.Phone.TYPE_WORK);
-        ops.add(builder.build());
+        String[] phoneNumParams = new String[] {
+                Long.toString(modifyID),
+                ContactsContract.CommonDataKinds.Phone.CONTENT_ITEM_TYPE
+        };
 
+        Cursor phoneNumCursor = context.getContentResolver().query (
+                ContactsContract.Data.CONTENT_URI,
+                null,
+                where,
+                phoneNumParams, null
+        );
+
+        // edit if exist.
+        if ( phoneNumCursor.getCount() > 0 )
+        {
+            ops.add(android.content.ContentProviderOperation.newUpdate(android.provider.ContactsContract.Data.CONTENT_URI)
+                    .withSelection(where, phoneNumParams)
+                    .withValue(ContactsContract.CommonDataKinds.Phone.DATA, contact.mPhoneNumber)
+                    .build());
+        }
+        else
+        {
+            ContentValues cValues = new ContentValues();
+            cValues.put(ContactsContract.Data.RAW_CONTACT_ID, modifyID);
+            cValues.put(ContactsContract.Data.MIMETYPE, ContactsContract.CommonDataKinds.Phone.CONTENT_ITEM_TYPE);
+            cValues.put(ContactsContract.CommonDataKinds.Phone.DATA, contact.mPhoneNumber);
+
+            ops.add(android.content.ContentProviderOperation.newInsert(android.provider.ContactsContract.Data.CONTENT_URI)
+                    .withValues(cValues)
+                    .build());
+        }
         // Update
         try
         {
