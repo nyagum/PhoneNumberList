@@ -15,49 +15,29 @@ import android.widget.AdapterView;
 import android.widget.Button;
 import android.widget.ListView;
 import java.util.ArrayList;
-import java.util.StringTokenizer;
 
 public class MainActivity extends AppCompatActivity {
 
     private ListView mListView;
     private BaseAdapterEx mAdapter=null;
-    private SharedPreferences preferences;
-
+//    private SharedPreferences preferences;
+    private ArrayList<PersonInfo> mContents;
     @Override
     protected void onCreate(Bundle savedInstanceState) {
-//        super.onCreate(savedInstanceState);
-//        setContentView(R.layout.activity_main);
-//
-//        //임의의 값을 넣어줌
-//        ArrayList<PersonInfo> mContents=new ArrayList<PersonInfo>();
-//
-//
-//        //Log.e("preferences============",preferences.getString((new Integer(0)).toString(), "fail"));
-//
-//        mListView = (ListView) findViewById(R.id.lv_list);
-//        mAdapter=new BaseAdapterEx(this, mContents);
-//
-//
+        super.onCreate(savedInstanceState);
+        setContentView(R.layout.activity_main);
+
+        ArrayList<PersonInfo> mContents;
+
+        mListView = (ListView) findViewById(R.id.lv_list);
+        mContents=getContactList();
 //        preferences=getSharedPreferences("listview", MODE_PRIVATE);
 //        SharedPreferences.Editor editor=preferences.edit();
 //        int size=preferences.getInt("size",0);
 //        Log.e("onCreate", "onCreate sizeof:"+size);
 //        if(size==0){
+//            // 처음 실행 할 떄
 //            mContents=getContactList();
-////
-////            Log.e("size.compareTo ","0");
-////            for(int i=0; i<100; i++){
-////                PersonInfo info = new PersonInfo();
-////                info.mNickName="홍길동"+i;
-////                info.mMessage="냐냥냐냥"+i;
-////                info.mPhoneNumber="01066785656";
-////                mAdapter.add(i,info);
-////                editor.putString(new Integer(i).toString(), info.toString());
-////            }
-////            editor.putInt("size",100);
-////
-////            editor.apply();
-//
 //        }else{
 //            Log.e("onCreate","onCreate "+size);
 //            for(int i=0; i<size; i++) {
@@ -74,55 +54,9 @@ public class MainActivity extends AppCompatActivity {
 //                info.mMessage=tempArray[1];
 //                info.mPhoneNumber=tempArray[2];
 //
-//                mAdapter.add(i, info);
+//                mContents.add(i,info);
 //            }
 //        }
-//
-//        mListView.setAdapter(mAdapter);
-//
-//        mListView.setOnItemClickListener(mItemClickListener);
-//        mListView.setOnItemLongClickListener(mOnItemLongClickListener);
-//
-//        Button mButton=(Button)findViewById(R.id.Btn_add);
-//        mButton.setOnClickListener(mAddCLickListener);
-
-
-
-        super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_main);
-
-        //임의의 값을 넣어줌
-        ArrayList<PersonInfo> mContents=new ArrayList<PersonInfo>();
-
-        mListView = (ListView) findViewById(R.id.lv_list);
-
-
-        preferences=getSharedPreferences("listview", MODE_PRIVATE);
-        SharedPreferences.Editor editor=preferences.edit();
-        int size=preferences.getInt("size",0);
-        Log.e("onCreate", "onCreate sizeof:"+size);
-        if(size==0){
-            // 처음 실행 할 떄
-            mContents=getContactList();
-        }else{
-            Log.e("onCreate","onCreate "+size);
-            for(int i=0; i<size; i++) {
-                String temp=preferences.getString((Integer.valueOf(i).toString()), "fail");
-                StringTokenizer st = new StringTokenizer(temp, ",");
-                String[] tempArray = new String[3];
-
-                int j=0;
-                while (st.hasMoreTokens()) {
-                    tempArray[j++]=st.nextToken();
-                }
-                PersonInfo info=new PersonInfo();
-                info.mNickName=tempArray[0];
-                info.mMessage=tempArray[1];
-                info.mPhoneNumber=tempArray[2];
-
-                mContents.add(i,info);
-            }
-        }
 
         mAdapter=new BaseAdapterEx(this, mContents);
 
@@ -152,10 +86,10 @@ public class MainActivity extends AppCompatActivity {
                                     //
                                     //int result = getContentResolver().delete(RowContacts)
                                     //삭제한다
-                                    preferences.edit().remove(new Integer(position).toString());
+//                                    preferences.edit().remove(new Integer(position).toString());
                                     mAdapter.delete(position);
-                                    preferences.edit().commit();
-                                    Log.e("preferences", "완료");
+//                                    preferences.edit().commit();
+//                                    Log.e("preferences", "완료");
                                 }
                             })
                     .setNegativeButton("취소",
@@ -178,7 +112,6 @@ public class MainActivity extends AppCompatActivity {
         public void onClick(View view) {
             Intent intent=new Intent(MainActivity.this, AddPersonInfoActivity.class);
             startActivityForResult(intent, 1);
-          //  Log.e("onClick","onClick event 발생!!");
         }
     };
 
@@ -200,12 +133,12 @@ public class MainActivity extends AppCompatActivity {
                 info.mPhoneNumber=return_textview_phonenumber_detail;
 
                 mAdapter.add(0,info);
-                SharedPreferences.Editor editor=preferences.edit();
-                editor.putString("0", info.toString());
-                editor.apply();
+     //           SharedPreferences.Editor editor=preferences.edit();
+//                editor.putString("0", info.toString());
+//                editor.apply();
 
             }else if(requestCode==2){
-                //Log.e("DetailPersonInfoActivity","DetailPersonInfoActivity 정상종료 확인");
+
                 String return_textview_nickname=data.getStringExtra("nickname");
                 String return_textview_message=data.getStringExtra("message");
                 String return_textview_phonenumber=data.getStringExtra("phonenumber");
@@ -250,13 +183,13 @@ public class MainActivity extends AppCompatActivity {
         super.onPause();
         Log.e("MyInfoActivity", "onPause");
 
-        SharedPreferences.Editor editor=preferences.edit();
-        editor.putInt("size", mAdapter.getCount());
-        Log.e("onStop", "onStop size"+(Integer.valueOf(mAdapter.getCount()).toString()));
-        for(int i=0; i<mAdapter.getCount(); i++) {
-            editor.putString(Integer.valueOf(i).toString(),mAdapter.getItem(i).toString());
-        }
-        editor.apply();
+//        SharedPreferences.Editor editor=preferences.edit();
+//        editor.putInt("size", mAdapter.getCount());
+//        Log.e("onStop", "onStop size"+(Integer.valueOf(mAdapter.getCount()).toString()));
+//        for(int i=0; i<mAdapter.getCount(); i++) {
+//            editor.putString(Integer.valueOf(i).toString(),mAdapter.getItem(i).toString());
+//        }
+//        editor.apply();
 
     }
     @Override
@@ -301,4 +234,5 @@ public class MainActivity extends AppCompatActivity {
         return contactlist;
     }
 
+    // TODO: shardPrefrenece 에 저장해둬서 삭제 취소할때 쓸것!!
 }
