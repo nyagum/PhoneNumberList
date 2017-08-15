@@ -24,6 +24,8 @@ import android.widget.Toast;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.Timer;
+import java.util.TimerTask;
 
 import static android.provider.ContactsContract.Directory.ACCOUNT_TYPE;
 
@@ -33,6 +35,8 @@ public class MainActivity extends AppCompatActivity {
     private BaseAdapterEx mAdapter=null;
 //    private SharedPreferences preferences;
     private ArrayList<PersonInfo> mContents;
+    private Timer mTimer=new Timer();
+    private TimerTask m5secTimerTask=null;
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -41,7 +45,7 @@ public class MainActivity extends AppCompatActivity {
         mListView = (ListView) findViewById(R.id.lv_list);
         mContents=getContactList();
 
-
+        startTimerTask();
 //        preferences=getSharedPreferences("listview", MODE_PRIVATE);
 //        SharedPreferences.Editor editor=preferences.edit();
 //        int size=preferences.getInt("size",0);
@@ -211,14 +215,28 @@ public class MainActivity extends AppCompatActivity {
 //            editor.putString(Integer.valueOf(i).toString(),mAdapter.getItem(i).toString());
 //        }
 //        editor.apply();
-
+        stopTimerTask();
     }
     @Override
     protected void onStop(){
         super.onStop();
         Log.e("MyInfoActivity", "onStop");
     }
-
+    private void startTimerTask(){
+        m5secTimerTask=new TimerTask() {
+            @Override
+            public void run() {
+                getContactList();
+            }
+        };
+        mTimer.schedule(m5secTimerTask, 0,5000);
+    }
+    private void stopTimerTask(){
+        if(m5secTimerTask!=null){
+            m5secTimerTask.cancel();
+            m5secTimerTask=null;
+        }
+    }
     private ArrayList<PersonInfo> getContactList() {
 
         Uri uri = ContactsContract.CommonDataKinds.Phone.CONTENT_URI;
